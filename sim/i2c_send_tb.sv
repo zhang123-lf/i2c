@@ -1,12 +1,12 @@
 module i2c_send_tb();
-    logic            rst_n       ;
-    logic            clk         ;
-    logic            pre_ready   ;
-    logic  [7:0]     pre_data    ;
-    logic            i2c_scl     ;
+    reg             rst_n       ;
+    reg             clk         ;
+    reg             pre_ready   ;
+    reg   [7:0]     pre_data    ;
+    wire            i2c_scl     ;
     wire            i2c_sda     ;
-    logic            byte_done   ;
-    logic            out_flag    ;
+    wire            byte_done   ;
+    wire            out_flag    ;
 
     i2c_send u_i2c_send(
       .rst_n     (rst_n    ),        
@@ -47,7 +47,7 @@ module i2c_send_tb();
 
     initial begin 
         $fsdbDumpfile("tb.fsdb");
-        $fsdbDumpvars("0,i2c_send_tb");
+        $fsdbDumpvars(0,i2c_send_tb);
         #100 $finish;
     end
 
