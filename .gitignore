@@ -1,0 +1,9 @@
+csrc/*
+*.log
+simv
+simv.daidir
+*.key
+*.conf
+*rc
+verdiLog
+
