@@ -4,7 +4,7 @@ module i2c_send_tb();
     logic            pre_ready   ;
     logic  [7:0]     pre_data    ;
     logic            i2c_scl     ;
-    logic            i2c_sda     ;
+    wire            i2c_sda     ;
     logic            byte_done   ;
     logic            out_flag    ;
 
@@ -41,7 +41,7 @@ module i2c_send_tb();
     assign i2c_sda = out_flag ? (pre_data <= 8'b1111_0011 ? 1'b0:1'b1):1'bz;
    
     initial begin
-        rts_n = 0;
+        rst_n = 0;
         # 100 rst_n = 1;
     end
 

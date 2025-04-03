@@ -104,7 +104,7 @@ module i2c_send(
             byte_done   =   1'b1    ;
             ack_flag    =   1'b0    ;
         end else begin
-            case(status)begin
+            case(status)
                 IDLE:begin
                     start_flag  =   1'b0    ;
                     i2c_sda_o   =   1'b1    ;
