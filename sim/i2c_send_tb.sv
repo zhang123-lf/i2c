@@ -48,7 +48,7 @@ module i2c_send_tb();
     initial begin 
         $fsdbDumpfile("tb.fsdb");
         $fsdbDumpvars(0,i2c_send_tb);
-        #100 $finish;
+        #3000 $finish;
     end
 
 endmodule

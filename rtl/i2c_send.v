@@ -13,10 +13,10 @@ module i2c_send(
     reg     clk_2           ;
     reg     start_flag      ;
     reg     ack_flag        ;
-    reg [3:0]   status      ;
-    reg [2:0]   cnt         ;
+    reg [4:0]   status      ;
+    reg [3:0]   cnt         ;
     reg [7:0]   data_r      ;
-
+    wire [3:0] data_i       ;
     localparam      IDLE    =   5'b0    ,
                     START   =   5'b10   ,
                     SEND    =   5'b100  ,
@@ -26,7 +26,7 @@ module i2c_send(
     assign i2c_sda   = i2c_sda_o ;
     assign i2c_sda_i = i2c_sda   ;
     assign i2c_scl = start_flag ? clk_2 & clk : 1'b1 ;// duty cycle 75%
-    
+    assign data_i = cnt == 4'd0 ? 4'd0 :cnt -4'd1;    
     assign out_flag = status == ANSWER ? 1'b1:1'b0;
 
     always@(posedge clk or negedge rst_n)begin
@@ -72,11 +72,11 @@ module i2c_send(
                 status  <=  START   ;
             end else if(status == START)begin
                 status  <=  SEND    ;
-            end else if(status == SEND && cnt == 3'd7)begin
+            end else if(status == SEND && cnt == 4'd8 && clk_2 == 1'b0)begin
                 status  <=  ANSWER  ;
-            end else if(status == ANSWER && ack_flag == 1'b1)begin
-                status  <=  SEND     ;
             end else if(status == ANSWER && ack_flag == 1'b0)begin
+                status  <=  SEND     ;
+            end else if(status == ANSWER && ack_flag == 1'b1)begin
                 status  <=  STOP    ;
             end else if(status== STOP && start_flag == 1'b0)begin
                 status  <=  IDLE    ;
@@ -87,12 +87,12 @@ module i2c_send(
     // data cnt 7
     always@(posedge clk_2 or negedge rst_n)begin
         if(!rst_n)begin
-            cnt     <=  3'd0    ;
+            cnt     <=  4'd0    ;
         end else begin
             if(status == SEND)
-                cnt <= cnt + 3'd1 ;
+                cnt <= cnt + 4'd1 ;
             else 
-                cnt <=  3'd0    ;
+                cnt <=  4'd0    ;
         end
     end
 
@@ -119,7 +119,7 @@ module i2c_send(
                 end
                 SEND:begin
                     start_flag  =   1'b1    ;
-                    i2c_sda_o   =   pre_data[cnt];
+                    i2c_sda_o   =   pre_data[data_i];
                     byte_done   =   1'b0    ;
                     ack_flag    =   1'b0    ;
                 end
@@ -135,15 +135,18 @@ module i2c_send(
                         ack_flag    =   ack_flag;
                 end
                 STOP:begin
-                    if(i2c_scl)begin
-                        start_flag  =   1'b0    ;
-                        i2c_sda_o   <=   1'b1    ;
+                    if(~i2c_scl)begin
+                        start_flag  =   start_flag    ;
+                        i2c_sda_o   =   1'b0    ;
                     end else begin
-                        start_flag  =   start_flag  ;
-                        i2c_sda_o   <=  i2c_sda_o   ;
+                        if(clk)
+                            i2c_sda_o = i2c_sda_o;
+                        else
+                            i2c_sda_o = 1'b1;
+                        start_flag  =   1'b0  ;
                     end
 
-                    ack_flag    =   1'b0    ;
+                    ack_flag    =   ack_flag    ;
                     byte_done   =   1'b0    ;
                 end
             endcase
