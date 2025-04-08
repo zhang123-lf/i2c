@@ -80,7 +80,8 @@ module i2c_send(
                 status  <=  STOP    ;
             end else if(status== STOP && start_flag == 1'b0)begin
                 status  <=  IDLE    ;
-            end
+            end else
+                status  <=  status  ;
         end
     end
 
