@@ -2,18 +2,18 @@ module i2c_receive(
     input   wire           rst_n           ,
     input   wire           clk             ,
     input   wire           i2c_ready       ,
-    input   wire           i2c_data_bytes  ,
+    input   wire    [3:0]  i2c_data_bytes  ,
     output  reg            i2c_scl         ,
     inout   wire           i2c_sda         ,
     output  reg     [7:0]  i2c_data        ,
-    output  wire           i2c_data_valid  
+    output  reg            i2c_data_valid  
 );
     
     reg         start_flag          ;
     wire        i2c_sda_i           ;
     reg         i2c_sda_o           ;
     reg         clk_2               ;
-    reg   [2:0] state               ;
+    reg   [3:0] state               ;
     reg   [3:0] cnt                 ;
     reg   [2:0] data_i              ;
     reg   [3:0] cnt_bytes           ;
@@ -63,7 +63,7 @@ module i2c_receive(
         end
     end
 
-    alwasy@(posedge clk or negedge rst_n)begin
+    always@(posedge clk or negedge rst_n)begin
         if(!rst_n)begin
             state   <= IDLE ;
         end else begin
@@ -75,14 +75,14 @@ module i2c_receive(
                 state <= ANSWER     ;
             end else if(state == ANSWER && cnt_bytes <  data_bytes - 4'd1)begin
                 state <= RECEIVE    ;
-            end else if(state == ANSWER && cnt_bytes == data_bytes - 4'd1)begin
+            end else if(state == ANSWER && cnt_bytes >= data_bytes - 4'd1)begin
                 state <= STOP       ;
             end else
                 state <= state  ;
         end
     end
 
-    alwasy@(posedge clk or negedge rst_n)begin
+    always@(posedge clk or negedge rst_n)begin
         if(!rst_n)begin
             i2c_data <= 8'd0    ;
         end else if(state == RECEIVE && i2c_scl == 1'b1)begin
@@ -92,8 +92,20 @@ module i2c_receive(
         end
     end
 
+    always@(posedge clk or negedge rst_n)begin
+        if(!rst_n)begin
+            cnt_bytes <= 4'd0;
+        end else if(state == ANSWER)begin
+            cnt_bytes <= cnt_bytes + 4'd1;
+        end else if(state == STOP)begin
+            cnt_bytes <= 4'd0;
+        end else begin
+            cnt_bytes <= cnt_bytes;
+        end
+    end
 
-    alwasy@(*)begin
+
+    always@(*)begin
         case(state)
             IDLE:begin
                 start_flag  =   1'b0    ;
@@ -130,14 +142,7 @@ module i2c_receive(
                     start_flag  =   1'b0    ;
                 end
                  i2c_data_valid = 1'b0   ;               
-
+                end
         endcase
-
-
-
-
-
-
-
-           
+    end
 endmodule
