@@ -15,7 +15,9 @@ module i2c_ctrl_tb();
     wire            out_flag        ;
     reg [1:0]       i2c_busy_r      ;
     wire            i2c_busy_negedge = ~i2c_busy_r[0] & i2c_busy_r[1];
-    reg             start           ;
+    reg             start ,r_data_flag;
+    reg             i2c_sda_o       ;
+    reg [3:0]       r_cnt           ;
 
     i2c_ctrl u_i2c_ctrl(
         .rst_n         (rst_n           ),  
@@ -33,13 +35,47 @@ module i2c_ctrl_tb();
         .i2c_sda       (i2c_sda         )  
     );
 
-    assign i2c_sda = (out_flag)?1'b0:1'bz;
+    assign i2c_sda = wr_ctrl?(out_flag?1'b0:1'bz):(~r_data_flag?i2c_sda_o:(out_flag?1'bz:i2c_sda_o));
+    
+
+    always@(posedge clk or negedge rst_n)begin
+        if(!rst_n)begin
+            r_cnt <= 4'd0;
+        end else if(~wr_ctrl & i2c_busy_r[0] & i2c_scl & ~out_flag)begin
+            r_cnt <= r_cnt + 4'd1;
+        end else if(out_flag) 
+            r_cnt <= 4'd0;
+        else
+            r_cnt <= r_cnt ;
+    end
+
+    always@(posedge clk or negedge rst_n)begin
+        if(!rst_n)
+            r_data_flag <= 1'b0;
+        else if(r_cnt >= 4'd8)
+            r_data_flag <= 1'b1;
+        else
+            r_data_flag <= r_data_flag;
+    end
+
+    always@(posedge clk or negedge rst_n)begin
+        if(!rst_n)begin
+            i2c_sda_o <= 1'bz;
+        end else if(r_data_flag && ~i2c_scl && ~out_flag)
+            i2c_sda_o <= w_data[r_cnt];
+        else if(~r_data_flag && r_cnt == 4'd8)
+            i2c_sda_o <= 1'b0;
+        else if(out_flag)
+            i2c_sda_o <= 1'bz;
+        else
+            i2c_sda_o <= i2c_sda_o;
+    end
 
     always@(posedge clk or negedge rst_n)begin
         if(!rst_n)begin
             wr_ctrl <= 1'b1;
         end else if(i2c_busy_negedge)begin
-            wr_ctrl <= 1'b0;
+           #40  wr_ctrl <= 1'b0;
         end
     end
 
@@ -81,7 +117,9 @@ module i2c_ctrl_tb();
         #150 rst_n = 1'b1;
         #30 start = 1'b1;
         #20 start = 1'b0;
-
+        @i2c_busy_negedge
+            #40 start = 1'b1;
+        #30 start = 1'b0;
     end
 
     initial begin

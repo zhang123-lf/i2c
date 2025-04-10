@@ -90,6 +90,8 @@ module i2c_ctrl(
                 state <= WANSWER ;
             end else if((state == SANSWER ||state == WANSWER)&& ack_flag == 1'b1)begin
                 state <= STOP   ;
+            end else if(state == STOP && i2c_sda_o == 1'b1)begin
+                state <= IDLE   ;
             end else begin
                 state <= state  ;
             end
